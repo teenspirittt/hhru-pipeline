@@ -1,0 +1,33 @@
+# Python-related
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyz
+*.pyw
+
+# Spark-related
+*.log
+*.out
+*.pid
+*.zip
+*.gz
+*.egg-info/
+dist/
+build/
+target/
+.idea/
+*.iml
+
+# Data files
+data/
+*.csv
+*.parquet
+
+# Config
+config/database.ini
+
+# Other
+.DS_Store
+venv/
+*.ipynb_checkpoints/
