@@ -23,7 +23,7 @@ def create_table(conn):
 
 
 def load_data(conn):
-    with open('data/processed/vacancies.json', 'r') as f:
+    with open('data/processed/vacancies_processed.json', 'r') as f:
         vacancies = json.load(f)
 
     with conn.cursor() as cur:

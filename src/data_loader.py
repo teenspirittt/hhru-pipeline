@@ -11,7 +11,7 @@ def save_vacancies(vacancies):
 def get_vacancies():
     url = "https://api.hh.ru/vacancies"
     params = {
-        "text": "python developer",
+        "text": "c",
         "area": 1,  # код региона, в данном случае Москва
         "per_page": 100,  # количество вакансий на одной странице
         "page": 0,  # номер страницы
