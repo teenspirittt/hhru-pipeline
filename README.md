@@ -12,7 +12,6 @@ The following are the steps involved in the project:</p>
 <h2>Data loading:</h2>
 <ul>
 <li>Use requests to download job data from the hh.ru API.</li>
-<li>Combine data from multiple sources.</li>
 </ul>
 
 <h2>Data storage:</h2>
@@ -31,7 +30,6 @@ The following are the steps involved in the project:</p>
 <h2>Data analysis:</h2>
 <ul>
 <li>Use PySpark to analyze job data.</li>
-<li>Train machine learning models on vacancy data.</li>
 <li>Create pivot tables and graphs.</li>
 </ul>
 
@@ -43,6 +41,5 @@ The following are the steps involved in the project:</p>
 <h2>Process automation:</h2>
 <ul>
 <li>Use Airflow to automate your pipeline.</li>
-<li>Set up normal task execution.</li>
-<li>Organize monitoring of the implementation of tasks and manage possible problems.</li>
+<li>Set up task execution.</li>
 </ul>
