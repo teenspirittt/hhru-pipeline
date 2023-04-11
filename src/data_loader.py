@@ -56,8 +56,3 @@ def get_vacancies():
         params['page'] += 1
 
     return vacancies
-
-
-if __name__ == "__main__":
-    vacancies = get_vacancies()
-    save_vacancies(vacancies)

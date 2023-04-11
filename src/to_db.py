@@ -59,7 +59,3 @@ def connect():
         if conn is not None:
             conn.close()
             print('Database connection closed.')
-
-
-if __name__ == "__main__":
-    connect()
