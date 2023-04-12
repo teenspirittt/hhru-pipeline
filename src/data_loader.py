@@ -11,10 +11,10 @@ def save_vacancies(vacancies):
 def get_vacancies():
     url = "https://api.hh.ru/vacancies"
     params = {
-        "text": "c",
-        "area": 1,  # код региона, в данном случае Москва
-        "per_page": 100,  # количество вакансий на одной странице
-        "page": 0,  # номер страницы
+        "text": "pascal",
+        "area": 1,
+        "per_page": 100,
+        "page": 0,
     }
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
