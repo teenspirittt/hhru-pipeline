@@ -4,8 +4,6 @@ The following are the steps involved in the project:</p>
 
 <h2>Preparatory stage:</h2>
 <ul>
-<li>Determine the requirements for the project and draw up a work plan.</li>
-<li>Decide on the tools and technologies used.</li>
 <li>Get access to the hh.ru API and read the documentation.</li>
 </ul>
 
