@@ -21,7 +21,6 @@ The following are the steps involved in the project:</p>
 
 <h2>Data transformation:</h2>
 <ul>
-<li>Use pandas to convert the data to the correct format.</li>
 <li>Remove duplicates, clear data from contacts and incorrect values.</li>
 </ul>
 
