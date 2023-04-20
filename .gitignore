@@ -30,4 +30,6 @@ config/database.ini
 # Other
 .DS_Store
 venv/
+env/
+docker-airflow/
 *.ipynb_checkpoints/
