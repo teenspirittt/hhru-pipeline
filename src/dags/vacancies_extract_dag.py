@@ -14,17 +14,25 @@ def extract_vacancies():
     url = 'https://api.hh.ru/vacancies'
     params = {
         'text': 'python developer',
-        'area': 1,
         'period': 30,
-        'per_page': 100
+        'per_page': 100,
+        'page': 0
     }
-    response = requests.get(url, params=params)
-    if response.status_code == 200:
-        data = response.json()
+    vacancies = []
+    while True:
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            vacancies += data['items']
+            if data['pages'] == params['page']:
+                break
+            params['page'] = data['page'] + 1
+        else:
+            print(f'Error: {response.status_code}')
+            break
+    if vacancies:
         with open(f'data/raw/{date}_vacancies.json', 'w') as file:
-            json.dump(data, file, ensure_ascii=False)
-    else:
-        print(f'Error: {response.status_code}')
+            json.dump(vacancies, file, ensure_ascii=False)
 
 
 def check_file():
@@ -57,7 +65,7 @@ with DAG(
     'hh_api_vacancies',
     default_args=args,
     description='Extract vacancies from hh.ru API',
-    schedule_interval='*/5 * * * *',
+    schedule_interval='30 10 * * *',
     catchup=False
 ) as dag:
     # operator for func execution
