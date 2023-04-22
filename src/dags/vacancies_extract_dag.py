@@ -1,11 +1,13 @@
+from airflow.operators.python_operator import BranchPythonOperator
+from airflow.operators.dummy_operator import DummyOperator
+from airflow.operators.python_operator import PythonOperator
+from airflow import DAG
+from datetime import datetime
+from pyspark.sql import SparkSession
+
 import requests
 import json
 import os
-from datetime import datetime
-from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
-from airflow.operators.dummy_operator import DummyOperator
-from airflow.operators.python_operator import BranchPythonOperator
 
 
 def extract_vacancies():
@@ -51,6 +53,20 @@ def check_code(**kwargs):
         return 'success'
     else:
         return 'failure'
+
+
+def save_to_hdfs():
+    HADOOP_USER_NAME = 'hdfs'
+    HADOOP_HOST = 'hadoop'
+    HADOOP_PORT = '9000'
+    HADOOP_PREFIX = f'hdfs://{HADOOP_USER_NAME}@{HADOOP_HOST}:{HADOOP_PORT}'
+    spark = SparkSession.builder.appName('hh_vacancies').getOrCreate()
+    date = datetime.today().strftime('%Y-%m-%d')
+    input_file = f'/usr/local/airflow/data/raw/{date}_vacancies.json'
+    output_dir = f'{HADOOP_PREFIX}/user/hadoop/hh_vacancies'
+    df = spark.read.json(input_file)
+    df.write.mode('overwrite').option('compression', 'gzip').json(output_dir)
+    spark.stop()
 
 
 args = {
@@ -100,5 +116,19 @@ with DAG(
         dag=dag
     )
 
+    end_operator = DummyOperator(
+        task_id='end',
+        dag=dag
+    )
+
+    save_to_hdfs_operator = PythonOperator(
+        task_id='save_to_hdfs',
+        python_callable=save_to_hdfs,
+        dag=dag
+    )
+
 extract_vacancies_operator >> check_file_operator >> branch_operator >> [
     success_operator, failure_operator]
+
+success_operator >> save_to_hdfs_operator
+failure_operator >> end_operator
