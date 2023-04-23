@@ -31,6 +31,7 @@ config/database.ini
 .DS_Store
 venv/
 env/
+config/
 docker-airflow/
 logs/
 *.ipynb_checkpoints/

@@ -2,3 +2,4 @@ requests
 datetime
 apache-airflow
 pyarrow
+pyspark
