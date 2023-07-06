@@ -1,0 +1,6 @@
+[submodule "docker-airflow"]
+	path = docker-airflow
+	url = git@github.com:puckel/docker-airflow.git
+[submodule "docker-hadoop"]
+	path = docker-hadoop
+	url = git@github.com:teenspirittt/docker-hadoop.git

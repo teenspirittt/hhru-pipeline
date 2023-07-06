@@ -32,6 +32,5 @@ config/database.ini
 venv/
 env/
 config/
-docker-airflow/
 logs/
 *.ipynb_checkpoints/
