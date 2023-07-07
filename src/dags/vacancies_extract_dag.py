@@ -4,6 +4,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow import DAG
 from datetime import datetime
 from pyspark.sql import SparkSession
+from hdfs import InsecureClient
 
 import requests
 import json
@@ -54,20 +55,18 @@ def check_code(**kwargs):
     else:
         return 'failure'
 
-
 def save_to_hdfs():
-    HADOOP_USER_NAME = 'hdfs'
-    HADOOP_HOST = 'hadoop'
-    HADOOP_PORT = '9000'
-    HADOOP_PREFIX = f'hdfs://{HADOOP_USER_NAME}@{HADOOP_HOST}:{HADOOP_PORT}'
-    spark = SparkSession.builder.appName('hh_vacancies').getOrCreate()
     date = datetime.today().strftime('%Y-%m-%d')
-    input_file = f'/usr/local/airflow/data/raw/{date}_vacancies.json'
-    output_dir = f'{HADOOP_PREFIX}/user/hadoop/hh_vacancies'
-    df = spark.read.json(input_file)
-    df.write.mode('overwrite').option('compression', 'gzip').json(output_dir)
-    spark.stop()
+    src_path = f'data/raw/{date}_vacancies.json'
+    dest_dir = "/hadoop-data/"
+    dest_path = dest_dir + f"{date}_vacancies.json" 
 
+    client = InsecureClient('http://namenode:9870', timeout=120)
+
+    
+    client.upload(dest_path, src_path, overwrite=True)
+
+    client.disconnect()
 
 args = {
     'owner': 'teenspirit',
