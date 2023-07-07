@@ -1,6 +1,7 @@
 from airflow.operators.python_operator import BranchPythonOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator 
 from airflow import DAG
 from datetime import datetime
 from pyspark.sql import SparkSession
@@ -60,13 +61,16 @@ def save_to_hdfs():
     date = datetime.today().strftime('%Y-%m-%d')
 
     src_path = f'data/raw/{date}_vacancies.json'
-    dest_dir = "/hadoop-data/"
-    
+    dest_dir = f"/hadoop-data/{date}_vacancies.json"
     client = InsecureClient('http://namenode:9870', user='root')
 
-    with open(src_path, 'rb') as local_file:
-        client.write(dest_dir, local_file)
+    if not client.status(dest_dir, strict=False):
+        with open(src_path, 'rb') as local_file:
+            local_file.seek(0) 
+            client.write(dest_dir, local_file)
+    
     client._session.close()
+
 
 args = {
     'owner': 'teenspirit',
@@ -126,8 +130,21 @@ with DAG(
         dag=dag
     )
 
+    spark_submit = SparkSubmitOperator(
+        task_id='spark_submit',
+       # application='',
+        name='DataProcessing',
+        conn_id='spark_default',
+        verbose=False,
+        driver_memory='1g',
+        executor_memory='1g',
+        num_executors=2,
+        executor_cores=1,
+        dag=dag
+)
+
 extract_vacancies_operator >> check_file_operator >> branch_operator >> [
     success_operator, failure_operator]
 
-success_operator >> save_to_hdfs_operator
+success_operator >> save_to_hdfs_operator >> process_data_operator
 failure_operator >> end_operator
