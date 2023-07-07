@@ -6,6 +6,7 @@ from datetime import datetime
 from pyspark.sql import SparkSession
 from hdfs import InsecureClient
 
+
 import requests
 import json
 import os
@@ -57,16 +58,15 @@ def check_code(**kwargs):
 
 def save_to_hdfs():
     date = datetime.today().strftime('%Y-%m-%d')
+
     src_path = f'data/raw/{date}_vacancies.json'
     dest_dir = "/hadoop-data/"
-    dest_path = dest_dir + f"{date}_vacancies.json" 
-
-    client = InsecureClient('http://namenode:9870', timeout=120)
-
     
-    client.upload(dest_path, src_path, overwrite=True)
+    client = InsecureClient('http://namenode:9870', user='root')
 
-    client.disconnect()
+    with open(src_path, 'rb') as local_file:
+        client.write(dest_dir, local_file)
+    client._session.close()
 
 args = {
     'owner': 'teenspirit',
