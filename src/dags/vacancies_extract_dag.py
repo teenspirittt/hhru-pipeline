@@ -1,7 +1,7 @@
 from airflow.operators.python_operator import BranchPythonOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
-from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator 
+from airflow.contrib.operators.spark_submit_operator import SparkSubmitOperator
 from airflow import DAG
 from datetime import datetime
 from pyspark.sql import SparkSession
@@ -99,7 +99,6 @@ with DAG(
         task_id='check_file',
         python_callable=check_file,
         dag=dag,
-        xcom_push=True
     )
 
     branch_operator = BranchPythonOperator(
@@ -130,18 +129,12 @@ with DAG(
         dag=dag
     )
 
-    spark_submit = SparkSubmitOperator(
-        task_id='spark_submit',
-       # application='',
-        name='DataProcessing',
+    process_data_operator = SparkSubmitOperator(
+        task_id='process_data',
+        application='scala/target/scala-2.12/dataprocessing_2.12-1.0.jar',
         conn_id='spark_default',
-        verbose=False,
-        driver_memory='1g',
-        executor_memory='1g',
-        num_executors=2,
-        executor_cores=1,
         dag=dag
-)
+    )
 
 extract_vacancies_operator >> check_file_operator >> branch_operator >> [
     success_operator, failure_operator]
