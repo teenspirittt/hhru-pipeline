@@ -47,7 +47,7 @@ object DataProcessing {
       $"department.id".alias("department"),
       $"has_test",
       $"response_letter_required",
-      $"area.name".alias("area"),
+      $"area.name".as("area"), // справочник
       $"salary.from".alias("salary_from"),
       $"salary.to".alias("salary_to"),
       $"salary.currency".alias("currency"),
@@ -60,7 +60,7 @@ object DataProcessing {
       $"employment.name".alias("employment"),
       $"snippet.requirement".alias("requirement"),
       $"snippet.responsibility".alias("responsibility")
-    ).as[Vacancy].toDF()
+    )
 
     // Perform further data processing, analysis, and aggregation as needed
     val vacancyCountByArea = vacanciesDF.groupBy("area").count()
@@ -76,3 +76,10 @@ object DataProcessing {
     spark.stop()
   }
 }
+
+
+// три датамарта,
+
+// 1. как стать дата инженером... 
+// 2. как стать стажером... 
+// 3. работодатели по времени (по сезонам) spark on hot encoding

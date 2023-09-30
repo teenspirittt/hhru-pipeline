@@ -1,7 +1,7 @@
 from airflow.operators.python_operator import BranchPythonOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
-from airflow.contrib.operators.spark_submit_operator import SparkSubmitOperator
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow import DAG
 from datetime import datetime
 from pyspark.sql import SparkSession
@@ -15,29 +15,42 @@ import os
 
 def extract_vacancies():
     date = datetime.today().strftime('%Y-%m-%d')
-    # hhru api`s URL
+    # hhru api's URL
     url = 'https://api.hh.ru/vacancies'
-    params = {
-        'text': 'python developer',
-        'period': 30,
-        'per_page': 100,
-        'page': 0
-    }
-    vacancies = []
-    while True:
-        response = requests.get(url, params=params)
-        if response.status_code == 200:
-            data = response.json()
-            vacancies += data['items']
-            if data['pages'] == params['page']:
+    all_vacancies = []
+    tags = [
+    'python', 'java', 'sql', 'scala', 'rust',
+    'data engineer', 'data scientist',
+    'frontend', 'backend',
+    'c', 'c++', 'c#',
+    'android developer', 'ios developer'
+    ]
+    for tag in tags:
+        tag_vacancies = []
+        page = 0
+        while True:
+            params = {
+                'text': tag,  # Поиск по текущему тегу
+                'period': 30,  # Период поиска в днях
+                'per_page': 100,  # Количество результатов на странице (максимум 200)
+                'page': page,  # Номер страницы
+            }
+            response = requests.get(url, params=params)
+            if response.status_code == 200:
+                data = response.json()
+                tag_vacancies += data['items']
+                if data['pages'] <= page:
+                    break
+                page += 1
+            else:
+                print(f'Error for tag "{tag}": {response.status_code}')
                 break
-            params['page'] = data['page'] + 1
-        else:
-            print(f'Error: {response.status_code}')
-            break
-    if vacancies:
+        
+        all_vacancies += tag_vacancies
+    
+    if all_vacancies:
         with open(f'data/raw/{date}_vacancies.json', 'w') as file:
-            json.dump(vacancies, file, ensure_ascii=False)
+            json.dump(all_vacancies, file, ensure_ascii=False)
 
 
 def check_file():
@@ -131,7 +144,7 @@ with DAG(
 
     process_data_operator = SparkSubmitOperator(
         task_id='process_data',
-        application='scala/target/scala-2.12/dataprocessing_2.12-1.0.jar',
+        application='/opt/src/scala/target/scala-2.12/dataprocessing_2.12-1.0.jar',
         conn_id='spark_default',
         dag=dag
     )
