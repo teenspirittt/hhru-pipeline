@@ -1,4 +1,4 @@
-name := "DataProcessing"
+name := "HRActivityAnalysis"
 
 version := "1.0"
 
