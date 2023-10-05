@@ -25,12 +25,4 @@ object CurrencyConverter {
         None
     }
   }
-
-  def main(args: Array[String]): Unit = {
-    val currencyCode = "KZT"
-    getCurrencyRate(currencyCode) match {
-      case Some(rate) => println(s"Курс 1 рубля к $currencyCode: $rate")
-      case None => println(s"Курс $currencyCode не найден")
-    }
-  }
 }
