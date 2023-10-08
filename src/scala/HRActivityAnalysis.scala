@@ -4,7 +4,6 @@ import org.apache.spark.sql.types._
 import java.time.LocalDate
 import org.apache.spark.sql.expressions.UserDefinedFunction
 
-
 import CurrencyConverter._
 
 object HRActivityAnalysis {
@@ -26,7 +25,6 @@ object HRActivityAnalysis {
       .when(col("experience.name").contains("Более"), regexp_extract(col("experience.name"), "\\d+", 0))
       .otherwise(null))
 
-
     // convert currency
     val convertToRubles: UserDefinedFunction = udf((from: Double, to: Double, currency: String) => {
       val rate = CurrencyConverter.getCurrencyRate(currency).getOrElse(1.0)
@@ -37,30 +35,37 @@ object HRActivityAnalysis {
       salaryRubles
     })
     
-    // todo salary_average
     val salaryWithRublesDF = experienceDF.withColumn("average_salary",
       convertToRubles(col("salary.from"), col("salary.to"), col("salary.currency")))
 
-  
-    val selectedDF = experienceDF.select(
-      col("published_at").alias("publish_date"),
+    // Add ID, vacancy_name, and employment columns
+    val enrichedDF = salaryWithRublesDF
+      .withColumn("id", col("id").cast(LongType)) // assuming ID is of LongType
+      .withColumn("vacancy_name", col("name"))
+      .withColumn("employment", col("employment.name"))
+
+
+    val selectedDF = enrichedDF.select(
+      col("id").alias("vacancy_id"),
+      col("vacancy_name"),
       col("employer.name").alias("employer_name"),
       col("area.name").alias("region_name"),
       col("average_salary"),
-      date_format(col("published_at"), "F").alias("day_of_week"),  // weekday (mon=1, sun=7)
-      date_format(col("published_at"), "H").alias("hour"),         // hour (0-23)
-      date_format(col("published_at"), "d").alias("day"),          // day (1-31)
-      date_format(col("published_at"), "M").alias("month"),        // month (1-12)
-      date_format(col("published_at"), "y").alias("year"),
-      col("experience_years").alias("experience")                 // Добавляем опыт работы
+      col("experience_years").alias("experience"),
+      col("employment"),
+      col("published_at").alias("publish_date"),
+      date_format(col("published_at"), "F").alias("day_of_week"),
+      date_format(col("published_at"), "H").alias("hour"),
+      date_format(col("published_at"), "d").alias("day"),
+      date_format(col("published_at"), "M").alias("month"),
+      date_format(col("published_at"), "y").alias("year")
     )
 
     val distinctDF = selectedDF.dropDuplicates()
     val cleanedDF = distinctDF.na.drop()
 
-    selectedDF.write.mode("overwrite").csv(s"hdfs://namenode:9000/hadoop-data/$date_cleaned.csv")
-    //rawDF.write.mode("overwrite").csv(s"hdfs://namenode:9000/hadoop-data/asd.csv")
-
+    cleanedDF.write.mode("overwrite").option("header", "true").csv(s"hdfs://namenode:9000/hadoop-data/$date_cleaned.csv")
+    
     spark.stop()
   }
 }
