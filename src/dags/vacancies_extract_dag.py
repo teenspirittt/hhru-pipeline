@@ -143,7 +143,7 @@ with DAG(
     )
 
     hr_actvity_operator = SparkSubmitOperator(
-        task_id='HRActvity parquet',
+        task_id='hr_actvity_parquet',
         application='/opt/src/scala/target/scala-2.12/hractivityanalysis_2.12-1.0.jar',
         conn_id='spark_default',
         dag=dag

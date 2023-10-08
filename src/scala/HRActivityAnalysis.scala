@@ -37,12 +37,12 @@ object HRActivityAnalysis {
       salaryRubles
     })
     
-
-    val salaryWithRublesDF = experienceDF.withColumn("salary_in_rubles",
+    // todo salary_average
+    val salaryWithRublesDF = experienceDF.withColumn("average_salary",
       convertToRubles(col("salary.from"), col("salary.to"), col("salary.currency")))
 
   
-    val selectedDF = salaryWithRublesDF.select(
+    val selectedDF = experienceDF.select(
       col("published_at").alias("publish_date"),
       col("employer.name").alias("employer_name"),
       col("area.name").alias("region_name"),
@@ -51,7 +51,8 @@ object HRActivityAnalysis {
       date_format(col("published_at"), "H").alias("hour"),         // hour (0-23)
       date_format(col("published_at"), "d").alias("day"),          // day (1-31)
       date_format(col("published_at"), "M").alias("month"),        // month (1-12)
-      date_format(col("published_at"), "y").alias("year")         
+      date_format(col("published_at"), "y").alias("year"),
+      col("experience_years").alias("experience")                 // Добавляем опыт работы
     )
 
     val distinctDF = selectedDF.dropDuplicates()

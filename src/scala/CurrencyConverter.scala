@@ -3,7 +3,7 @@ import scala.xml.XML
 
 object CurrencyConverter {
   def getCurrencyRate(currencyCode: String): Option[Double] = {
-    val url = s"https://www.cbr.ru/scripts/XML_daily.asp?date_req=01/10/2023" // Замените дату по желанию
+    val url = s"https://www.cbr.ru/scripts/XML_daily.asp?date_req=01/10/2023"
     val xmlString = Source.fromURL(url, "windows-1251").mkString
 
     try {
