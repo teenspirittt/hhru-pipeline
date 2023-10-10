@@ -4,7 +4,6 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow import DAG
 from datetime import datetime
-from pyspark.sql import SparkSession
 from hdfs import InsecureClient
 
 
