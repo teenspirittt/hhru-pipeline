@@ -16,10 +16,11 @@ import org.json4s.native.JsonMethods._
 import CurrencyConverter._
 
 
-implicit val formats = DefaultFormats
+
 
 
 object HRActivityAnalysis {
+  implicit val formats = DefaultFormats
   def main(args: Array[String]): Unit = {
     val date = LocalDate.now().toString
     val date_vacancies = s"$date" + "_vacancies"
@@ -110,3 +111,4 @@ object HRActivityAnalysis {
     (json \ "key_skills").extract[List[String]]
   }
 }
+
