@@ -15,12 +15,8 @@ import org.json4s.native.JsonMethods._
 
 import CurrencyConverter._
 
-
-
-
-
 object HRActivityAnalysis {
-  implicit val formats = DefaultFormats
+  implicit val formats: DefaultFormats.type = DefaultFormats
   def main(args: Array[String]): Unit = {
     val date = LocalDate.now().toString
     val date_vacancies = s"$date" + "_vacancies"
@@ -32,7 +28,7 @@ object HRActivityAnalysis {
       .getOrCreate()
 
     val rawDF = spark.read.json(s"hdfs://namenode:9000/hadoop-data/$date_vacancies.json")
-    
+
     // work exp
     val experienceDF = rawDF.withColumn("experience_years", when(col("experience.name") === "Нет опыта", 0)
       .when(col("experience.name").contains("От") && col("experience.name").contains("до"), regexp_extract(col("experience.name"), "\\d+", 0))
@@ -43,24 +39,24 @@ object HRActivityAnalysis {
     val convertToRubles: UserDefinedFunction = udf((from: Double, to: Double, currency: String) => {
       val rate = CurrencyConverter.getCurrencyRate(currency).getOrElse(1.0)
       val salaryRubles = if (from != 0 && to != 0) (from + to) / 2 * rate
-                        else if (from != 0) from * rate
-                        else if (to != 0) to * rate
-                        else 0.0
+      else if (from != 0) from * rate
+      else if (to != 0) to * rate
+      else 0.0
       salaryRubles
     })
-    
+
     val salaryWithRublesDF = experienceDF.withColumn("average_salary",
       convertToRubles(col("salary.from"), col("salary.to"), col("salary.currency")))
-      
+
     // Add ID, vacancy_name, and employment columns
     val enrichedDF = salaryWithRublesDF
       .withColumn("id", col("id").cast(LongType))
       .withColumn("vacancy_name", col("name"))
       .withColumn("employment", col("employment.name"))
 
-    val vacancyIds = enrichedDF.select("id").collect().map(_.getString(0))
+    val vacancyIds: Seq[Long] = enrichedDF.select("id").rdd.map(_.getLong(0)).collect().toList
 
-    val futureSkills: Seq[Future[(String, List[String])]] = vacancyIds.map { vacancyId =>
+    val futureSkills: Seq[Future[(Long, List[String])]] = vacancyIds.map { vacancyId =>
       Future {
         val jsonResponse = fetchVacancyJson(vacancyId)
         val keySkills = extractKeySkills(jsonResponse)
@@ -68,14 +64,12 @@ object HRActivityAnalysis {
       }
     }
 
-   
-
-    val allSkills: Seq[(String, List[String])] = Await.result(Future.sequence(futureSkills), Duration.Inf)
-    val skillsMap: Map[String, List[String]] = allSkills.toMap
+    val allSkills: Seq[(Long, List[String])] = Await.result(Future.sequence(futureSkills), Duration.Inf)
+    val skillsMap: Map[Long, List[String]] = allSkills.toMap
 
     val skillsDF = enrichedDF.withColumn("key_skills", map(lit(skillsMap)))
 
-    val selectedDF = enrichedDF.select(
+    val selectedDF = skillsDF.select(
       col("id").alias("vacancy_id"),
       col("vacancy_name"),
       col("employer.name").alias("employer_name"),
@@ -100,8 +94,7 @@ object HRActivityAnalysis {
     spark.stop()
   }
 
-
-  def fetchVacancyJson(vacancyId: String): String = {
+  def fetchVacancyJson(vacancyId: Long): String = {
     val response: HttpResponse[String] = Http(s"https://api.hh.ru/vacancies/$vacancyId").asString
     response.body
   }
@@ -111,4 +104,3 @@ object HRActivityAnalysis {
     (json \ "key_skills").extract[List[String]]
   }
 }
-
