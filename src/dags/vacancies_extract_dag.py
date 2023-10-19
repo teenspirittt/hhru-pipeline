@@ -21,7 +21,7 @@ def extract_vacancies():
     'python', 'java', 'sql', 'scala', 'rust',
     'data engineer', 'data scientist',
     'frontend', 'backend',
-    'c', 'c++', 'c#',
+    'c', 'c++', 'c#', # add kotlin and R
     'android developer', 'ios developer'
     ]
     for tag in tags:
@@ -143,7 +143,7 @@ with DAG(
 
     hr_actvity_operator = SparkSubmitOperator(
         task_id='hr_actvity_parquet',
-        application='/opt/src/scala/target/scala-2.12/hractivityanalysis_2.12-1.0.jar',
+        application='/opt/src/scala/target/scala-2.12/HRActivityAnalysis-assembly-1.0.jar',
         conn_id='spark_default',
         dag=dag
     )
