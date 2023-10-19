@@ -3,25 +3,27 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import java.time.LocalDate
 import org.apache.spark.sql.expressions.UserDefinedFunction
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Sink
+import scala.concurrent.ExecutionContext
+import akka.http.scaladsl.settings.ConnectionPoolSettings
+
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
-import org.json4s.DefaultFormats
-import org.json4s.native.JsonMethods._
-
-import CurrencyConverter._
 
 object HRActivityAnalysis {
   implicit val formats: DefaultFormats.type = DefaultFormats
   implicit val system: ActorSystem = ActorSystem("my-system")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
+  val connectionPoolSettings = ConnectionPoolSettings(system).withMaxOpenRequests(5000)
+  
   def main(args: Array[String]): Unit = {
     val date = LocalDate.now().toString
     val date_vacancies = s"$date" + "_vacancies"
@@ -61,16 +63,22 @@ object HRActivityAnalysis {
 
     val vacancyIds: Seq[Long] = enrichedDF.select("id").rdd.map(_.getLong(0)).collect().toList
 
-    val futureSkills: Seq[Future[(Long, List[String])]] = vacancyIds.map { vacancyId =>
-      Future {
-        val jsonResponse = fetchVacancyJson(vacancyId)
+    val actorSystem = ActorSystem("RequestActors")
+    val actorMaterializer = ActorMaterializer()
+
+    // Здесь мы используем mapAsync вместо map, чтобы выполнять асинхронные запросы к API
+    val futures: Seq[Future[(Long, List[String])]] = vacancyIds.map { vacancyId =>
+      val jsonResponseFuture: Future[String] = fetchVacancyJson(vacancyId)
+      jsonResponseFuture.map { jsonResponse =>
         val keySkills = extractKeySkills(jsonResponse)
         (vacancyId, keySkills)
-      }
+      }(ExecutionContext.global)
     }
 
-    val allSkills: Seq[(Long, List[String])] = Await.result(Future.sequence(futureSkills), Duration.Inf)
+    val allSkills: Seq[(Long, List[String])] = Await.result(Future.sequence(futures), Duration.Inf)
     val skillsMap: Map[Long, List[String]] = allSkills.toMap
+
+    actorSystem.terminate()
 
     val skillsDF = enrichedDF.withColumn("key_skills", map(lit(skillsMap)))
 
@@ -99,28 +107,34 @@ object HRActivityAnalysis {
     spark.stop()
   }
 
-  def fetchVacancyJson(vacancyId: Long): String = {
-    // Создайте неявные ActorSystem и Materializer
-    implicit val system: ActorSystem = ActorSystem("my-actor-system")
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
+  def fetchVacancyJson(vacancyId: Long): Future[String] = {
+    val url = s"https://api.hh.ru/vacancies/$vacancyId"
+    val request = HttpRequest(uri = url)
 
-    // Отправьте HTTP-запрос и получите ответ
-    val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = s"https://api.hh.ru/vacancies/$vacancyId"))
-    val response = Await.result(responseFuture, Duration.Inf)
+    val responseFuture: Future[HttpResponse] = Http().singleRequest(request, settings = connectionPoolSettings)
 
-    // Извлеките текст ответа
-    val responseBodyFuture: Future[String] = Unmarshal(response.entity).to[String]
-    val responseBody = Await.result(responseBodyFuture, Duration.Inf)
-
-    // Верните текст ответа
-    responseBody
+    responseFuture.flatMap { response =>
+      response.status match {
+        case StatusCodes.OK =>
+          Unmarshal(response.entity).to[String]
+        case _ =>
+          Future.failed(new RuntimeException(s"Request failed with status: ${response.status}"))
+      }
+    }
   }
 
   def extractKeySkills(jsonResponse: String): List[String] = {
     val json = org.json4s.native.JsonMethods.parse(jsonResponse)
-    (json \ "key_skills").extract[List[String]]
+    val keySkills = (json \ "key_skills").extractOpt[JValue] match {
+      case Some(skillValue) =>
+        skillValue match {
+          case JString(skill) => List(skill)
+          case JArray(skills) => skills.collect { case JString(skill) => skill }
+          case _ => List()  // Если не удается преобразовать, вернуть пустой список
+        }
+      case None =>
+        List()  // Если "key_skills" отсутствует, вернуть пустой список
+    }
+    keySkills
   }
 }
-
-
-// посмотреть 4 года опыта de
