@@ -22,7 +22,7 @@ object HRActivityAnalysis {
   implicit val formats: DefaultFormats.type = DefaultFormats
   implicit val system: ActorSystem = ActorSystem("my-system")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
-  val connectionPoolSettings = ConnectionPoolSettings(system).withMaxOpenRequests(5000)
+  val connectionPoolSettings = ConnectionPoolSettings(system).withMaxOpenRequests(64)
   
   def main(args: Array[String]): Unit = {
     val date = LocalDate.now().toString
@@ -66,16 +66,26 @@ object HRActivityAnalysis {
     val actorSystem = ActorSystem("RequestActors")
     val actorMaterializer = ActorMaterializer()
 
-    // Здесь мы используем mapAsync вместо map, чтобы выполнять асинхронные запросы к API
-    val futures: Seq[Future[(Long, List[String])]] = vacancyIds.map { vacancyId =>
-      val jsonResponseFuture: Future[String] = fetchVacancyJson(vacancyId)
-      jsonResponseFuture.map { jsonResponse =>
-        val keySkills = extractKeySkills(jsonResponse)
-        (vacancyId, keySkills)
-      }(ExecutionContext.global)
-    }
+  
+    val batchSize = 50
+    val batches: List[Seq[Long]] = vacancyIds.grouped(batchSize).toList
 
-    val allSkills: Seq[(Long, List[String])] = Await.result(Future.sequence(futures), Duration.Inf)
+    var allSkills: Seq[(Long, List[String])] = Seq.empty
+
+    batches.foreach { batch =>
+      val futures: Seq[Future[(Long, List[String])]] = batch.map { vacancyId =>
+        val jsonResponseFuture: Future[String] = fetchVacancyJson(vacancyId)
+        jsonResponseFuture.map { jsonResponse =>
+          val keySkills = extractKeySkills(jsonResponse)
+          (vacancyId, keySkills)
+        }(ExecutionContext.global)
+      }
+      val currentBatchResults = Await.result(Future.sequence(futures), Duration.Inf)
+      allSkills = allSkills ++ currentBatchResults
+
+      Thread.sleep(5000)
+    } 
+
     val skillsMap: Map[Long, List[String]] = allSkills.toMap
 
     actorSystem.terminate()
