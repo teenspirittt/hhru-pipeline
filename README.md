@@ -55,5 +55,3 @@ The primary objective of this project is to utilize the hh.ru API to extract job
 4. A data mart is created, likely for reporting and data visualization purposes.
 
 5. The data processing and visualization tasks are orchestrated and automated using Apache Airflow, ensuring a streamlined and scheduled workflow.
-
-Please note that while this README provides an overview of the project, specific details about data processing, visualization, and PowerBI are not included. Refer to the project code and documentation for more information on those aspects.
