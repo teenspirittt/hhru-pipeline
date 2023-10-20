@@ -1,42 +1,59 @@
-<h1>Project: Analyzing job data using the hh.ru API</h1>
-<p>This project is aimed at analyzing job data using the hh.ru API. 
-The following are the steps involved in the project:</p>
+# Project README
 
-<h2>Preparatory stage:</h2>
-<ul>
-<li>Get access to the hh.ru API and read the documentation.</li>
-</ul>
+## Technologies Used
+This project leverages several technologies to achieve its objectives:
 
-<h2>Data loading:</h2>
-<ul>
-<li>Use requests to download job data from the hh.ru API.</li>
-</ul>
+1. **Python:** Used for writing Directed Acyclic Graphs (DAGs) to orchestrate the data pipeline.
 
-<h2>Data storage:</h2>
-<ul>
-<li>Create a database to store vacancies.</li>
-<li>Use PostgreSQL to interact with the database.</li>
-<li>Store the data in the data table database.</li>
-</ul>
+2. **Airflow:** Utilized for creating and managing data pipelines, ensuring automation and scheduling of tasks.
 
-<h2>Data transformation:</h2>
-<ul>
-<li>Remove duplicates, clear data from contacts and incorrect values.</li>
-</ul>
+3. **Hadoop HDFS:** Employed for storing and managing large datasets, where extracted job vacancies are stored.
 
-<h2>Data analysis:</h2>
-<ul>
-<li>Use PySpark to analyze job data.</li>
-<li>Create pivot tables and graphs.</li>
-</ul>
+4. **Scala Spark:** Utilized for processing and analyzing the data from Hadoop HDFS, providing a scalable and distributed data processing framework.
 
-<h2>Data Preview:</h2>
-<ul>
-<li>Use Tableau or PowerBI to create data visualizations.</li>
-</ul>
+5. **Scala Akka:** Employed for implementing actors and asynchronous requests, enabling efficient, concurrent data processing.
 
-<h2>Process automation:</h2>
-<ul>
-<li>Use Airflow to automate your pipeline.</li>
-<li>Set up task execution.</li>
-</ul>
+## Project Structure
+The project is organized into the following components and directories:
+
+- **docker-hadoop:** A custom Docker image for running Hadoop. You can find it at [docker-hadoop on GitHub](https://github.com/teenspirittt/docker-hadoop).
+
+- **docker-airflow:** A customized Docker image for running Apache Airflow. For detailed information, refer to [docker-airflow on GitHub](https://github.com/teenspirittt/docker-airflow).
+
+- **src/dags/vacancies_extract_dag.py:** Python code for the Airflow DAG responsible for extracting job vacancies from the hh.ru API and storing them in Hadoop HDFS.
+
+- **src/scala/CurrencyConverter.scala:** Scala code for a data processing task, possibly related to currency conversion.
+
+- **src/scala/HRActivityAnalysis.scala:** Scala code for another data processing task, possibly related to HR activity analysis.
+
+- **src/scala/build.sbt:** The SBT (Scala Build Tool) configuration file for the Scala project, defining dependencies and build settings.
+
+- **src/scala/project/build.properties:** Configuration file for the Scala project's build settings.
+
+- **src/scala/project/plugins.sbt:** Configuration file for SBT plugins used in the Scala project.
+
+## How to Run the Project
+To run this project, follow these steps:
+
+1. In the project's root directory, start the Docker containers for Airflow and Hadoop:
+
+   ```bash
+   docker-compose up -f docker-compose.yaml -d # for Airflow
+   docker-compose up -f docker-compose.yaml -d # for Hadoop
+
+
+
+## Project Overview
+The primary objective of this project is to utilize the hh.ru API to extract job vacancies and automate the data processing workflow. Here's a high-level overview of the project's process:
+
+1. Job vacancies are retrieved from the hh.ru API.
+
+2. The extracted data is stored in Hadoop HDFS for further processing.
+
+3. Scala Spark is employed to process and analyze the data, which can include tasks like currency conversion and HR activity analysis.
+
+4. A data mart is created, likely for reporting and data visualization purposes.
+
+5. The data processing and visualization tasks are orchestrated and automated using Apache Airflow, ensuring a streamlined and scheduled workflow.
+
+Please note that while this README provides an overview of the project, specific details about data processing, visualization, and PowerBI are not included. Refer to the project code and documentation for more information on those aspects.
