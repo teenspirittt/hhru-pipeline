@@ -2,6 +2,7 @@ from airflow.operators.python_operator import BranchPythonOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
+import re
 from airflow import DAG
 from datetime import datetime
 from hdfs import InsecureClient
@@ -69,11 +70,31 @@ def check_code(**kwargs):
     else:
         return 'failure'
 
-def save_to_hdfs():
-    date = datetime.today().strftime('%Y-%m-%d')
 
-    src_path = f'data/raw/{date}_vacancies.json'
-    dest_dir = f"/hadoop-data/{date}_vacancies.json"
+def save_merged_vacancies(output_filename, all_vacancies):
+    with open(output_filename, 'w') as output_file:
+        json.dump(all_vacancies, output_file, ensure_ascii=False)
+
+
+def collect_vacancies():
+    source_dir = 'data/raw'
+    output_filename = 'data/raw/raw_vacancies.json'
+    all_vacancies = []
+    file_pattern = re.compile(r'\d{4}-\d{2}-\d{2}_vacancies\.json')
+
+    for filename in os.listdir(source_dir):
+        if file_pattern.match(filename):
+            file_path = os.path.join(source_dir, filename)
+            with open(file_path, 'r') as file:
+                data = json.load(file)
+                all_vacancies.extend(data)
+
+    save_merged_vacancies(output_filename,all_vacancies)
+
+
+def save_to_hdfs():
+    src_path = f'data/raw/raw_vacancies.json'
+    dest_dir = f"/hadoop-data/raw_vacancies.json"
     client = InsecureClient('http://namenode:9870', user='root')
 
     if not client.status(dest_dir, strict=False):
@@ -99,14 +120,12 @@ with DAG(
     schedule_interval='30 10 * * *',
     catchup=False
 ) as dag:
-    # operator for func execution
     extract_vacancies_operator = PythonOperator(
         task_id='extract_vacancies',
         python_callable=extract_vacancies,
         dag=dag
     )
 
-    # operator for check if json exist
     check_file_operator = PythonOperator(
         task_id='check_file',
         python_callable=check_file,
@@ -148,8 +167,14 @@ with DAG(
         dag=dag
     )
 
+    merge_vacancies = PythonOperator(
+        task_id='merge_vacancies',
+        python_callable=collect_vacancies,
+        dag=dag
+    )
+
 extract_vacancies_operator >> check_file_operator >> branch_operator >> [
     success_operator, failure_operator]
 
-success_operator >> save_to_hdfs_operator >> hr_actvity_operator
+success_operator >> merge_vacancies >> save_to_hdfs_operator >> hr_actvity_operator
 failure_operator >> end_operator
