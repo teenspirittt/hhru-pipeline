@@ -19,12 +19,16 @@ object HRActivityAnalysis {
     val spark = SparkSession.builder
       .appName("HRActivityAnalysis")
       .master("spark://sparkmaster:7077")
+      .config("spark.executor.memory", "14g")
+      .config("spark.driver.memory", "20g")
       .getOrCreate()
 
     val rawDF = spark.read.json(s"hdfs://namenode:9000/hadoop-data/$raw_vacancies.json")
-
+   
+    val distinctDF = rawDF.dropDuplicates()
+    
     // work exp
-    val experienceDF = rawDF.withColumn("experience_years", when(col("experience.name") === "Нет опыта", 0)
+    val experienceDF = distinctDF.withColumn("experience_years", when(col("experience.name") === "Нет опыта", 0)
       .when(col("experience.name").contains("От") && col("experience.name").contains("до"), regexp_extract(col("experience.name"), "\\d+", 0))
       .when(col("experience.name").contains("Более"), regexp_extract(col("experience.name"), "\\d+", 0))
       .otherwise(null))
@@ -63,10 +67,7 @@ object HRActivityAnalysis {
       date_format(col("published_at"), "M").alias("month"),
       date_format(col("published_at"), "y").alias("year")
     )
-
-    val distinctDF = selectedDF.dropDuplicates()
-    val cleanedDF = distinctDF.na.drop()
-
+    val cleanedDF = selectedDF.na.drop()
     cleanedDF.write.mode("overwrite").option("header", "true").csv(s"hdfs://namenode:9000/hadoop-data/$date_cleaned.csv")
 
     spark.stop()
