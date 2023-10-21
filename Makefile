@@ -9,7 +9,7 @@ stop:
 	docker-compose -f ./docker-hadoop/docker-compose.yml down
 
 clean: stop
-	docker-compose -f ./docker-airflow/docker-compose.yml down --volumes
-	docker-compose -f ./docker-hadoop/docker-compose.yml down --volumes
+	docker-compose -f ./docker-airflow/docker-compose.yml down --volumes --remove-orphans
+	docker-compose -f ./docker-hadoop/docker-compose.yml down --volumes --remove-orphans
 
 restart: stop run
