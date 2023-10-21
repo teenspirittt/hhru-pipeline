@@ -2,14 +2,13 @@ from airflow.operators.python_operator import BranchPythonOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
-import re
 from airflow import DAG
-from datetime import datetime
 from hdfs import InsecureClient
 
-
+from datetime import datetime
 import requests
 import json
+import re
 import os
 
 
@@ -21,8 +20,8 @@ def extract_vacancies():
     tags = [
     'python', 'java', 'sql', 'scala', 'rust',
     'data engineer', 'data scientist',
-    'frontend', 'backend',
-    'c', 'c++', 'c#', # add kotlin and R
+    'frontend', 'backend', 'R',
+    'c', 'c++', 'c#', 'Kotlin',
     'android developer', 'ios developer'
     ]
     for tag in tags:
