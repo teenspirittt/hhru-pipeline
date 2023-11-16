@@ -1,0 +1,9 @@
+postgres {
+  profile = "slick.jdbc.PostgresProfile$"
+  db {
+    url = "jdbc:postgresql://docker-airflow-postgres-1:5432/airflow"
+    user = "user"
+    password = "password"
+    driver = "org.postgresql.Driver"
+  }
+}

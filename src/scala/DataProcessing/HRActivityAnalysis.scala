@@ -23,7 +23,7 @@ object HRActivityAnalysis {
       .config("spark.driver.memory", "20g")
       .getOrCreate()
 
-    val rawDF = spark.read.json(s"hdfs://namenode:9000/hadoop-data/$raw_vacancies.json")
+    val rawDF = spark.read.json(s"hdfs://namenode:9000/hadoop-data/$date_vacancies.json")
    
     val distinctDF = rawDF.dropDuplicates()
     

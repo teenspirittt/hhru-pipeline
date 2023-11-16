@@ -161,7 +161,7 @@ with DAG(
 
     hr_actvity_operator = SparkSubmitOperator(
         task_id='hr_actvity_parquet',
-        application='/opt/src/scala/target/scala-2.12/HRActivityAnalysis-assembly-1.0.jar',
+        application='/opt/src/scala/DataProcessing/target/scala-2.12/HRActivityAnalysis-assembly-1.0.jar',
         conn_id='spark_default',
         dag=dag
     )
@@ -175,5 +175,5 @@ with DAG(
 extract_vacancies_operator >> check_file_operator >> branch_operator >> [
     success_operator, failure_operator]
 
-success_operator >> merge_vacancies >> save_to_hdfs_operator >> hr_actvity_operator
+success_operator >> save_to_hdfs_operator >> hr_actvity_operator
 failure_operator >> end_operator
