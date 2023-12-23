@@ -92,7 +92,9 @@ def collect_vacancies():
 
 
 def save_to_hdfs():
-    src_path = f'data/raw/raw_vacancies.json'
+    date = datetime.today().strftime('%Y-%m-%d')
+    src_path = f'data/raw/{date}_vacancies.json'
+    #src_path = f'data/raw/raw_vacancies.json'
     dest_dir = f"/hadoop-data/raw_vacancies.json"
     client = InsecureClient('http://namenode:9870', user='root')
 
@@ -102,6 +104,7 @@ def save_to_hdfs():
             client.write(dest_dir, local_file)
     
     client._session.close()
+
 
 
 args = {
@@ -159,21 +162,28 @@ with DAG(
         dag=dag
     )
 
-    hr_actvity_operator = SparkSubmitOperator(
-        task_id='hr_actvity_parquet',
+    prepare_data = SparkSubmitOperator(
+        task_id='prepare_data',
         application='/opt/src/scala/DataProcessing/target/scala-2.12/HRActivityAnalysis-assembly-1.0.jar',
         conn_id='spark_default',
         dag=dag
     )
-
-    merge_vacancies = PythonOperator(
-        task_id='merge_vacancies',
-        python_callable=collect_vacancies,
+    
+    create_datamarts = SparkSubmitOperator(
+        task_id='create_datamarts',
+        application='/opt/src/scala/DataMart/target/scala-2.12/datamarts-assembly-1.0.jar',
+        conn_id='spark_default',
         dag=dag
     )
+
+    #merge_vacancies = PythonOperator(
+    #    task_id='merge_vacancies',
+    #    python_callable=collect_vacancies,
+    #    dag=dag
+    #)
 
 extract_vacancies_operator >> check_file_operator >> branch_operator >> [
     success_operator, failure_operator]
 
-success_operator >> save_to_hdfs_operator >> hr_actvity_operator
+success_operator >> save_to_hdfs_operator >> prepare_data >> create_datamarts
 failure_operator >> end_operator
